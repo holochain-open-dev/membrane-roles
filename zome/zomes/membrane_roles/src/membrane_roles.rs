@@ -1,6 +1,6 @@
 use crate::utils;
-use holo_hash::DnaHashB64;
 use hdk::prelude::*;
+use holo_hash::DnaHashB64;
 
 #[hdk_entry(id = "membrane_role")]
 #[derive(Clone)]
@@ -11,7 +11,7 @@ pub struct MembraneRole {
 
 impl MembraneRole {
     pub fn new(role_name: String) -> ExternResult<Self> {
-        let dna_hash = DnaHashB64::from(zome_info()?.dna_hash);
+        let dna_hash = DnaHashB64::from(dna_info()?.hash);
         Ok(MembraneRole {
             dna_hash,
             role_name,
@@ -59,12 +59,11 @@ pub struct GetRolesOutput(pub Vec<MembraneRoleOutput>);
 #[hdk_extern]
 pub fn get_all_membrane_roles(_: ()) -> ExternResult<GetRolesOutput> {
     let all_roles_path = all_roles_path();
-    let dna_hash = DnaHashB64::from(zome_info()?.dna_hash);
+    let dna_hash = DnaHashB64::from(dna_info()?.hash);
 
     let links = get_links(all_roles_path.hash()?, None)?;
 
     let all_roles: Vec<MembraneRoleOutput> = links
-        .into_inner()
         .into_iter()
         .map(|link| {
             let role = MembraneRole {
