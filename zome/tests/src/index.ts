@@ -2,6 +2,7 @@ import { Orchestrator, Config, Player } from "@holochain/tryorama";
 import path from "path";
 import * as msgpack from "@msgpack/msgpack";
 import { Base64 } from "js-base64";
+import { installAgents } from "./install";
 
 export function serializeHash(hash) {
   return `u${Base64.fromUint8Array(hash, true)}`;
@@ -9,39 +10,17 @@ export function serializeHash(hash) {
 
 const conductorConfig = Config.gen();
 
-// Construct proper paths for your DNAs
-const rolesDna = path.join(__dirname, "../../membrane_roles.dna.gz");
-
-const sleep = (ms) => new Promise((resolve) => setTimeout(() => resolve(null), ms));
+const sleep = (ms) =>
+  new Promise((resolve) => setTimeout(() => resolve(null), ms));
 
 const orchestrator = new Orchestrator();
 
 orchestrator.registerScenario(
   "create a role and assign an agent",
   async (s, t) => {
-    const [player]: Player[] = await s.players([conductorConfig]);
-
-    const aliceKey = await player.adminWs().generateAgentPubKey();
-
-    const dnas = [
-      {
-        path: rolesDna,
-        nick: `my_cell_nick`,
-        properties: { progenitors: [serializeHash(aliceKey)] },
-        membrane_proof: undefined,
-      },
-    ];
-
-    const alice_happ = await player._installHapp({
-      installed_app_id: `my_app:12345`, // my_app with some unique installed id value
-      agent_key: aliceKey,
-      dnas,
-    });
-    const bob_happ = await player._installHapp({
-      installed_app_id: `my_app:1234`, // my_app with some unique installed id value
-      agent_key: await player.adminWs().generateAgentPubKey(),
-      dnas,
-    });
+    const [alice, bobby] = await s.players([conductorConfig, conductorConfig]);
+    const [alice_happ] = await installAgents(alice, ["alice"]);
+    const [bob_happ] = await installAgents(bobby, ["bobby"]);
 
     const alice_roles = alice_happ.cells[0];
     const bob_roles = bob_happ.cells[0];

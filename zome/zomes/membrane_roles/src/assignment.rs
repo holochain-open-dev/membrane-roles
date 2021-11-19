@@ -4,8 +4,8 @@ use crate::{
     progenitor::get_progenitors,
     utils,
 };
-use holo_hash::{AgentPubKeyB64, DnaHashB64};
 use hdk::prelude::*;
+use holo_hash::{AgentPubKeyB64, DnaHashB64};
 
 #[hdk_entry(id = "membrane_role_assigment")]
 pub struct MembraneRoleAssignment {
@@ -29,7 +29,7 @@ pub fn assign_membrane_role(input: AssignRoleInput) -> ExternResult<()> {
 
     let role_assignment = MembraneRoleAssignment {
         role_name: input.role_name,
-        dna_hash: DnaHashB64::from(zome_info()?.dna_hash),
+        dna_hash: DnaHashB64::from(dna_info()?.hash),
         agent_pub_key: AgentPubKey::from(input.agent_pub_key.clone()),
     };
 
@@ -55,13 +55,12 @@ pub fn assign_membrane_role(input: AssignRoleInput) -> ExternResult<()> {
 pub fn get_membrane_role_assignees(
     membrane_role_hash: EntryHash,
 ) -> ExternResult<Vec<AgentPubKeyB64>> {
-    let links = get_links(
+    let links: Vec<Link> = get_links(
         membrane_role_hash.clone(),
         Some(utils::link_tag("assignee")?),
     )?;
 
     let mut assigned_agents = links
-        .into_inner()
         .into_iter()
         .map(|link| {
             let assignment: MembraneRoleAssignment =
@@ -89,9 +88,8 @@ pub fn get_membrane_roles_for_agent(agent_pub_key: AgentPubKeyB64) -> ExternResu
     Ok(GetRolesOutput(agent_roles))
 }
 
-fn links_to_membrane_role_output(links: Links) -> ExternResult<Vec<MembraneRoleOutput>> {
+fn links_to_membrane_role_output(links: Vec<Link>) -> ExternResult<Vec<MembraneRoleOutput>> {
     links
-        .into_inner()
         .into_iter()
         .map(|link| {
             let assignment: MembraneRoleAssignment =
